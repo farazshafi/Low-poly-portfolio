@@ -49,12 +49,13 @@ export function createController(physicsWorld) {
      * @param {object}  keys         from InputManager.keys
      * @param {boolean} jumpPressed  from InputManager.consumeJump()
      * @param {number}  cameraTheta  camera azimuth from ThirdPersonCamera
+     * @param {boolean} [paused]     when true (zone interaction), suppress input
      */
-    function update(delta, keys, jumpPressed, cameraTheta) {
+    function update(delta, keys, jumpPressed, cameraTheta, paused = false) {
         // ── Step physics world ──────────────────────────────────────────────────
         physicsWorld.step(1 / 60, delta, 3);
 
-        // ── Ground constraint — sample terrain directly ─────────────────────────
+        // ── Ground constraint — always runs, even when paused ───────────────────
         const px = body.position.x;
         const pz = body.position.z;
         const groundY = getHeightAt(px, pz);
@@ -69,6 +70,15 @@ export function createController(physicsWorld) {
         }
 
         jumpCooldown = Math.max(0, jumpCooldown - delta);
+
+        // ── Skip movement input when paused (zone interaction open) ────────────
+        if (paused) {
+            body.velocity.x *= 0.85;
+            body.velocity.z *= 0.85;
+            isMoving = false;
+            squashStretch += (1.0 - squashStretch) * Math.min(10 * delta, 1);
+            return;
+        }
 
         // ── XZ movement relative to camera heading ──────────────────────────────
         // cameraTheta: camera sits at (sin θ · d, h, cos θ · d) from character

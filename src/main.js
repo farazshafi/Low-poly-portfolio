@@ -18,6 +18,9 @@ import { createCharacter } from './player/character.js';
 import { createController } from './player/controller.js';
 import { ThirdPersonCamera } from './player/thirdPersonCamera.js';
 
+import { ZoneManager } from './zones/ZoneManager.js';
+import { PanelManager } from './ui/PanelManager.js';
+
 // ─── Scene ───────────────────────────────────────────────────────────────────
 
 const scene = new THREE.Scene();
@@ -43,7 +46,7 @@ createRocks(scene);
 
 const { update: updateMist } = createMist(scene);
 
-// ─── Physics world ────────────────────────────────────────────────────────────
+// ─── Physics ──────────────────────────────────────────────────────────────────
 
 const physicsWorld = new CANNON.World({
     gravity: new CANNON.Vec3(0, -30, 0),
@@ -57,8 +60,21 @@ const input = new InputManager();
 const { group: charGroup, animate: animateCharacter } = createCharacter(scene);
 const controller = createController(physicsWorld);
 
-// Collidables for camera collision — terrain + mountains
 const tpCamera = new ThirdPersonCamera(camera, [terrain, mountainGroup]);
+
+// ─── UI Panels & Zones ────────────────────────────────────────────────────────
+
+const panelManager = new PanelManager();
+
+const zoneManager = new ZoneManager(scene, {
+    projects: () => panelManager.open('projects'),
+    skills: () => panelManager.open('skills'),
+    profile: () => panelManager.open('profile'),
+});
+
+panelManager.onClose = () => {
+    zoneManager.close();
+};
 
 // ─── Post-processing ──────────────────────────────────────────────────────────
 
@@ -82,26 +98,29 @@ window.addEventListener('resize', onResize);
 const clock = new THREE.Clock();
 
 renderer.setAnimationLoop(() => {
-    const delta = Math.min(clock.getDelta(), 0.05); // cap at 50 ms to avoid spiral
+    const delta = Math.min(clock.getDelta(), 0.05);
     const time = clock.elapsedTime;
 
-    // 1. Consume input
+    // 1. Input
     const { dx, dy } = input.consumeMouseDelta();
     const jumped = input.consumeJump();
 
-    // 2. Update camera orbit (provides theta for movement direction)
+    // 2. Camera orbit
     tpCamera.update(controller.body.position, dx, dy);
 
-    // 3. Move physics body (steps world internally)
-    controller.update(delta, input.keys, jumped, tpCamera.theta);
+    // 3. Zone proximity check + marker animation
+    zoneManager.update(controller.body.position, time);
 
-    // 4. Sync visual character to physics body
+    // 4. Physics + movement (paused when zone interaction is open)
+    controller.update(delta, input.keys, jumped, tpCamera.theta, zoneManager.isInteracting);
+
+    // 5. Sync character visual to physics body
     const { x, y, z } = controller.body.position;
-    const SPHERE_R = 0.9;  // must match CONTROLLER_CONFIG.SPHERE_RADIUS
+    const SPHERE_R = 0.9;
     charGroup.position.set(x, y - SPHERE_R, z);
     charGroup.rotation.y = controller.facing;
 
-    // 5. Animate character (bob, swing, squash-stretch)
+    // 6. Character animation
     animateCharacter({
         isMoving: controller.isMoving,
         isGrounded: controller.isGrounded,
@@ -110,9 +129,7 @@ renderer.setAnimationLoop(() => {
         targetStretch: controller.squashStretch,
     });
 
-    // 6. Mist drift
+    // 7. Mist + render
     updateMist();
-
-    // 7. Render via composer (bloom pass)
     composer.render();
 });
