@@ -3,15 +3,15 @@ import * as THREE from 'three';
 // ─── Tweak these to adjust the mist ──────────────────────────────────────────
 
 export const MIST_CONFIG = {
-    PARTICLE_COUNT: 40,
+    PARTICLE_COUNT: 120,
     SPREAD_X: 90,    // half-width of spawn area
     SPREAD_Z: 90,    // half-depth of spawn area
-    HEIGHT_MIN: 0.05,   // particles float just above the ground
-    HEIGHT_MAX: 1.5,
-    SIZE_MIN: 2,     // billboard size in world units
+    HEIGHT_MIN: 0.1,   // particles float just above the ground
+    HEIGHT_MAX: 2.5,
+    SIZE_MIN: 4,     // billboard size in world units
     SIZE_MAX: 12,
     COLOR: 0xf5d9aa,  // warm dusty gold
-    OPACITY_MAX: 0.04,      // semi-transparent — subtle!
+    OPACITY_MAX: 0.07,      // semi-transparent — subtle!
     DRIFT_SPEED: 0.004,     // how fast particles drift per frame (world units)
 };
 

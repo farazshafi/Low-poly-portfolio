@@ -5,15 +5,17 @@ import { createLights } from './scene/lights.js';
 import { createControls } from './scene/controls.js';
 import { createSky } from './scene/sky.js';
 import { createPostProcessing, resizeComposer } from './scene/postprocessing.js';
-import { createGround } from './world/ground.js';
+import { createTerrain } from './world/terrain.js';
+import { createMountains } from './world/mountains.js';
+import { createTrees } from './world/trees.js';
+import { createRocks } from './world/rocks.js';
 import { createMist } from './world/mist.js';
 
 // ─── Scene ───────────────────────────────────────────────────────────────────
 
 const scene = new THREE.Scene();
 
-// No scene.background needed — the sky dome covers it.
-// Warm dusty-gold exponential fog fades distant objects atmospherically.
+// Warm dusty-gold exponential fog fades distant mountains atmospherically
 scene.fog = new THREE.FogExp2(0xd4895a, 0.007);
 
 // ─── Core objects ─────────────────────────────────────────────────────────────
@@ -26,7 +28,13 @@ const controls = createControls(camera, renderer.domElement);
 
 createLights(scene);
 createSky(scene);
-createGround(scene);
+
+// ─── World ────────────────────────────────────────────────────────────────────
+
+createTerrain(scene);
+createMountains(scene);
+createTrees(scene);
+createRocks(scene);
 
 const { update: updateMist } = createMist(scene);
 
@@ -51,9 +59,7 @@ window.addEventListener('resize', onResize);
 // ─── Animation loop ───────────────────────────────────────────────────────────
 
 renderer.setAnimationLoop((_time) => {
-    controls.update();   // damping
-    updateMist();        // drift particles
-
-    // Use composer instead of renderer.render so bloom is applied
+    controls.update();
+    updateMist();
     composer.render();
 });
